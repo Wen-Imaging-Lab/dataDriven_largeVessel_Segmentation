@@ -1,0 +1,36 @@
+order: ICA,BA,PCA,MCA,MCAdistal,ACA,ACAdistal
+
+
+MCAdistal and ACAdistal will not contain MCA and ACA voxels -- at least in MNI space.
+
+Matlab code:
+
+cd('/N/project/wen/common/vesselatlas')
+UBA = niftiread('UBA167_mni.nii.gz');
+info = niftiinfo('UBA167_mni.nii.gz');
+new(:,:,:,1) = UBA(:,:,:,1)+UBA(:,:,:,2); %ICA
+new(:,:,:,2) = UBA(:,:,:,3); %BA
+new(:,:,:,3) = UBA(:,:,:,6)+UBA(:,:,:,7); %PCA
+new(:,:,:,4) = UBA(:,:,:,8)+UBA(:,:,:,9); % MCA
+new(:,:,:,5) = UBA(:,:,:,15)+UBA(:,:,:,16); %MCA_distal
+new(:,:,:,6) = UBA(:,:,:,10)+UBA(:,:,:,11); %ACA
+new(:,:,:,7) = UBA(:,:,:,12); %ACA_distal
+new = new>0.01;
+SE = strel('cube', 3);
+for i = 1:7
+    new_dilate(:,:,:,i) = imdilate(new(:,:,:,i),SE);
+end
+
+%Don't overlap MCA-MCA_distal and ACA-ACA_distal
+overlap_idx = new_dilate(:,:,:,4)>0;
+new_dilate(:,:,:,5) = new_dilate(:,:,:,5) & ~overlap_idx;
+overlap_idx = new_dilate(:,:,:,6)>0;
+new_dilate(:,:,:,7) = new_dilate(:,:,:,7) & ~overlap_idx;
+
+%Remove the back half of the PCA -- cut in the midline of the medulla to
+%exclude the inclusion of the straight sinus and the Quadrigeminal Cistern
+new_dilate(:,1:102,:,3) = false;
+
+info.ImageSize(4) = size(new_dilate,4);
+info.raw.dim(5) = size(new_dilate,4);
+niftiwrite(single(new_dilate),'UBA_exclude_VA_PCOM_mni','info',info,'Compressed',true);

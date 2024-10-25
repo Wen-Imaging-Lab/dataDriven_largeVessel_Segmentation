@@ -2,12 +2,16 @@
 % Written by: Tianyin Xu
 % Edited by: Qiuting Wen, Adam Wright
 
-% Last modified: 20240711
+% Last modified: 20240925
+
+%Modifications:
+%20240925 -- Updated the UBA mask to be UBA_exclude_VA_PCOM_fmri.nii.gz
 
 % Inputs: 
 % fMRI_path -- the scans path -- this path must include the following
 % files:
-%   - UBA6bi_fmri.nii.gz (Transformed UBA atlas into fMRI space)
+%   - UBA_exclude_VA_PCOM_fmri.nii.gz Modified: 20241007 -- this will be
+%   used to create a mask with just the MCA, ACA, and PCA.
 %   - brain_mask.nii.gz (output from fsl bet)
 %   - R2mean_100trial_wholeBrain.nii.gz (generated from align_fMRI_wholebrain.m)
 %   - fMRI_PULS_detrend.nii.gz (generated from align_fMRI_wholebrain.m)
@@ -27,8 +31,8 @@ function meanwaveform_prelimArtery(fMRI_path)
     % Check if required files are available
     if ~exist('brain_mask.nii.gz','file')
         error('brain_mask file does not exist. Generate this file before this step');
-    elseif ~exist('UBA6bi_fmri.nii.gz','file')
-        error('UBA6bi_fmri.nii.gz file does not exist. Generate this file before this step');
+    elseif ~exist('UBA_exclude_VA_PCOM_fmri.nii.gz','file')
+        error('UBA_exclude_VA_PCOM_fmri.nii.gz file does not exist. Generate this file before this step');
     elseif ~exist('R2mean_100trial_wholeBrain.nii.gz','file')
         error('R2mean_100trial_wholeBrain.nii.gz file does not exist. Generate this file before this step');
     end
@@ -45,13 +49,17 @@ function meanwaveform_prelimArtery(fMRI_path)
     fmri_pulse = double(niftiread("fMRI_PULS_detrend.nii.gz"));
     
     %load UBA mask
-    UBAmask = double(niftiread('UBA6bi_fmri.nii.gz'));
+    %UBAmask = double(niftiread('UBA6bi_fmri.nii.gz'));
+    UBAmask = double(niftiread('UBA_exclude_VA_PCOM_fmri.nii.gz'));
+
     %Binarize the UBA mask to create an overly inclusive arterial search region.
-    UBAmask_overlay = sum(UBAmask,4);
+    UBAmask_overlay = sum(UBAmask(:,:,:,3:7),4); %Modified 20241007-- only include regions 3:7 -- excluding the ICA and BA.. including ACA, MCA, PCA.
     UBAmask_overlay = reshape(UBAmask_overlay,[],nx*ny*nsl);
     UBAmask_overlay = UBAmask_overlay(:) > 0.05;
     UBAmask_overlay = squeeze(reshape(UBAmask_overlay,[],nx,ny,nsl));
-    
+    info = niftiinfo('brain_mask.nii.gz');
+    niftiwrite(int16(UBAmask_overlay),'UBA_mask.nii','info',info,'Compressed',true);
+
     %create a subfolder to save the intermediate data
     subfolderName = 'vesselMask_sub';
     if ~exist(subfolderName, 'dir')

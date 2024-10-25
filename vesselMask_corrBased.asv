@@ -229,4 +229,41 @@ function vesselMask_corrBased(fMRI_data,fMRI_path)
     %For later plotting, the mean waveforms -- stored in above loop -- mean_waveform_artery = mean(resized_fmri_pulse(tmpArtery(:)>0,:),1);
     fprintf('Finished creating artery segmentation \n')
     
+    %% Save mean waveforms of the final SSS and artery segmentations.
+    cd(vesselMask_path)
+
+    double_artery = [mean_waveform_artery,mean_waveform_artery];
+    double_artery_neg = [mean_waveform_artery_neg,mean_waveform_artery_neg];
+    double_SSS = [mean_waveform_SSS,mean_waveform_SSS];
+    double_SSS_neg = [mean_waveform_SSS_neg,mean_waveform_SSS_neg];
+    time = linspace(0,2,2 * length(mean_waveform_SSS));
+    
+    figure('Visible','off');
+    ax = gca;
+    yyaxis left;
+    ax.YColor = [0,0,233/255];
+    plot(time, double_SSS,'Color',[0,0,253/255],'LineWidth',2); hold on
+    plot(time, double_SSS_neg,'Color',[247/255,183/255,5/255],'LineWidth',2,'LineStyle','-')
+    ylabel('Mean Aligned Signal SSS (A.U.)');
+      
+    yyaxis right;
+    ax.YColor = [253/255,0/255,0/255];
+    plot(time,double_artery,'Color',[253/255,0/255,0/255],'LineWidth',2); hold on
+    plot(time,double_artery_neg,'Color','g','LineWidth',2); hold on
+   
+    xlabel('Cardiac Phase (A.U.)');
+    ylabel('Mean Aligned Signal Artery (A.U.)','Color',[253/255,0/255,0/255]); 
+    title('Mean Cardiac Aligned Signal');
+
+    legend('SSS (+)','SSS (-)','Artery (+)','Artery (-)','interpreter','none');
+    legend('Location','bestoutside')
+    grid on;
+    saveas(gcf, 'meanwaveform_final.png');
+    
+    column_name = {'Artery';'SSS';'Artery_neg';'SSS_neg'};
+
+    data = table(mean_waveform_artery',mean_waveform_SSS',mean_waveform_artery_neg',mean_waveform_SSS_neg','VariableNames',column_name);
+    writetable(data,'final_meanwaveform_combined.txt');
+
+    cd(fMRI_path)
 end

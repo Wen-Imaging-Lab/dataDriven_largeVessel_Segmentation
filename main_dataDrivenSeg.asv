@@ -44,8 +44,8 @@ if ~(exist('brain_mask.nii.gz','file') == 2)
     error('brain_mask file does not exist. Generate this file before running the main script');
 elseif ~(exist('SSS_mask_fmri.nii.gz','file') == 2)
     error('SSS_mask_fmri.nii.gz file does not exist. Generate this file before running the main script');
-elseif ~exist('UBA_exclude_VA_PCOM_fmri.nii.gz','file')
-    error('UBA_exclude_VA_PCOM_fmri.nii.gz file does not exist. Generate this file before running the main script');
+elseif ~exist('UBA6bi_fmri.nii.gz','file')
+    error('UBA6bi_fmri.nii.gz file does not exist. Generate this file before running the main script');
 end
 
 %Create and save a physiology file for the fMRI scan data named physio.m
